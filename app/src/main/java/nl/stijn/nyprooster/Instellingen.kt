@@ -22,10 +22,6 @@ class Instellingen(context: Context) {
         get() = p.getString("titel", "Stijn NYP Werk")!!
         set(v) = p.edit().putString("titel", v.trim()).apply()
 
-    var groep: String
-        get() = p.getString("groep", "Info NYP Egelantierlaan")!!
-        set(v) = p.edit().putString("groep", v.trim()).apply()
-
     /** Bestanden die al bekeken zijn ("pad|grootte|gewijzigd"). */
     fun isBekeken(sleutel: String) = p.getStringSet("bekeken", emptySet())!!.contains(sleutel)
     fun markeerBekeken(sleutel: String) = voegToe("bekeken", sleutel, 300)

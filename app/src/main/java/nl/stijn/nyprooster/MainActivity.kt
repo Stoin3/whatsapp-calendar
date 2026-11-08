@@ -19,7 +19,6 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 
 class MainActivity : Activity() {
@@ -82,14 +81,9 @@ class MainActivity : Activity() {
         kolom.addView(status)
         knop("Agenda-toegang geven") { vraagAgenda() }
         knop("Toegang tot bestanden geven (WhatsApp-map)") { vraagBestanden() }
-        knop("Meldingtoegang geven (WhatsApp meelezen)") {
-            startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
-        }
         knop("Batterijbeperking uitzetten") { vraagBatterij() }
         tekst(
-            "Grijs/geblokkeerd bij meldingtoegang (\"Beperkte instelling\")? Ga naar Instellingen → Apps → " +
-                "NYP Rooster → ⋮ (rechtsboven) → \"Beperkte instellingen toestaan\" en probeer opnieuw.\n\n" +
-                "Zet in WhatsApp → Instellingen → Opslag en gegevens → Automatisch downloaden: " +
+            "Zet in WhatsApp → Instellingen → Opslag en gegevens → Automatisch downloaden: " +
                 "\"Documenten\" aan (wifi én mobiel), anders wordt de PDF niet automatisch opgeslagen."
         )
 
@@ -103,14 +97,13 @@ class MainActivity : Activity() {
         veld("naam", "Naam in het rooster", inst.naam)
         veld("agenda", "Agenda", inst.agenda)
         veld("titel", "Titel van de afspraak", inst.titel)
-        veld("groep", "WhatsApp-groep", inst.groep)
         knop("Agenda kiezen uit lijst…") { kiesAgenda() }
         knop("Instellingen opslaan") { slaOp(); Toast.makeText(this, "Opgeslagen", Toast.LENGTH_SHORT).show() }
 
         kop("3. Rooster verwerken")
         tekst(
-            "Automatisch: bij een bericht in de groep wordt de WhatsApp-documentenmap gecontroleerd, " +
-                "en daarnaast elk uur.\nHandmatig: deel de PDF vanuit WhatsApp met \"NYP Rooster\", of:"
+            "Automatisch: elke 15 minuten wordt de WhatsApp-documentenmap gecontroleerd. Alleen PDF's " +
+                "die een NYP-rooster zijn worden verwerkt.\nHandmatig: deel de PDF vanuit WhatsApp met \"NYP Rooster\", of:"
         )
         knop("Rooster-PDF kiezen…") {
             slaOp()
@@ -138,13 +131,11 @@ class MainActivity : Activity() {
         velden["naam"]?.text?.toString()?.takeIf { it.isNotBlank() }?.let { inst.naam = it }
         velden["agenda"]?.text?.toString()?.takeIf { it.isNotBlank() }?.let { inst.agenda = it }
         velden["titel"]?.text?.toString()?.takeIf { it.isNotBlank() }?.let { inst.titel = it }
-        velden["groep"]?.text?.toString()?.let { inst.groep = it }
     }
 
     private fun toonStatus() {
         fun r(ok: Boolean, t: String) = (if (ok) "✅ " else "❌ ") + t
         val agendaOk = heeft(Manifest.permission.READ_CALENDAR) && heeft(Manifest.permission.WRITE_CALENDAR)
-        val meldingOk = NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName)
         val bestandOk = if (Build.VERSION.SDK_INT >= 30) WhatsAppMap.heeftToegang()
         else heeft(Manifest.permission.READ_EXTERNAL_STORAGE)
         val batterijOk = getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(packageName)
@@ -152,7 +143,6 @@ class MainActivity : Activity() {
         status.text = listOf(
             r(agendaOk, "Agenda"),
             r(bestandOk, "Bestanden" + if (bestandOk) " ($mappen WhatsApp-documentenmap gevonden)" else ""),
-            r(meldingOk, "Meldingen meelezen"),
             r(batterijOk, "Geen batterijbeperking"),
         ).joinToString("\n")
     }

@@ -8,9 +8,10 @@ Android-app die het weekrooster van New York Pizza uit de WhatsApp-groep
 
 1. WhatsApp downloadt het rooster-PDF automatisch naar
    `Android/media/com.whatsapp/WhatsApp/Media/WhatsApp Documents/`.
-2. De app leest WhatsApp-meldingen mee. Komt er een bericht in de groep binnen,
-   dan kijkt de app (na 20 s, 1, 3 en 10 min) of er een nieuw rooster-PDF in die map staat.
-   Daarnaast kijkt de app elk uur, voor het geval een melding gemist is.
+2. De app kijkt elke 15 minuten of er een nieuw PDF in die map staat. Alleen PDF's die een
+   NYP-rooster zijn ("Rooster NYP", "Week: ..") met jouw naam erin worden verwerkt; andere PDF's
+   worden genegeerd. (De app leest bewust géén WhatsApp-meldingen mee: daarvoor is
+   meldingtoegang nodig, en dan blokkeert Google Play Protect de installatie.)
 3. De PDF wordt op de telefoon zelf uitgelezen (geen internet nodig). De rij met jouw naam
    geeft per dag de begin- en eindtijd. Tijden zijn decimaal: `22,50` = 22:30.
 4. De diensten worden via de Android-agenda in **Gezinsagenda** gezet; die synchroniseert
@@ -28,14 +29,11 @@ of in de app **Rooster-PDF kiezen…**.
 2. Open **NYP Rooster** en geef in stap 1 alle toestemmingen:
    - **Agenda** (en meldingen, om te laten weten dat het rooster erin staat)
    - **Toegang tot bestanden** – om de WhatsApp-documentenmap te lezen
-   - **Meldingtoegang** – om berichten in de groep op te merken.
-     Is dit grijs met "Beperkte instelling"? Instellingen → Apps → NYP Rooster →
-     ⋮ (rechtsboven) → **Beperkte instellingen toestaan**, en probeer opnieuw.
    - **Batterijbeperking uitzetten** – anders stopt o.a. Samsung/Xiaomi de app op de achtergrond.
 3. WhatsApp → Instellingen → Opslag en gegevens → **Automatisch downloaden media**:
    zet **Documenten** aan bij wifi én mobiele data.
 4. Controleer bij stap 2 de instellingen (naam `Stijn`, agenda `Gezinsagenda`, titel
-   `Stijn NYP Werk`, groep `Info NYP Egelantierlaan`). Met **Agenda kiezen uit lijst…**
+   `Stijn NYP Werk`). Met **Agenda kiezen uit lijst…**
    zie je welke agenda's op de telefoon beschikbaar zijn.
 5. Test: open het rooster in WhatsApp → Delen → NYP Rooster. In het logboek zie je het resultaat.
 

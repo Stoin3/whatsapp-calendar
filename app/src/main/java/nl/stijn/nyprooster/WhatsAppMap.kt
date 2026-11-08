@@ -55,7 +55,7 @@ object WhatsAppMap {
             val bytes = try { f.readBytes() } catch (e: Exception) { continue } // nog bezig met downloaden?
             if (bytes.size < 5 || String(bytes, 0, 5) != "%PDF-") continue
             val uitkomst = verwerker.verwerk(bytes, f.name, forceer = false)
-            // Ook bij een fout als bekeken markeren (anders elk uur dezelfde foutmelding).
+            // Ook bij een fout als bekeken markeren (anders elke 15 minuten dezelfde foutmelding).
             // "Nu scannen" in de app probeert alles opnieuw.
             inst.markeerBekeken(sleutel)
             if (uitkomst is Verwerker.Uitkomst.Toegevoegd) toegevoegd++

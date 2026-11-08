@@ -3,8 +3,6 @@ package nl.stijn.nyprooster
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.ExistingWorkPolicy
-import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
@@ -17,28 +15,17 @@ class ScanWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
     }
 
     companion object {
-        /** Elk uur een controle, voor het geval een melding gemist is. */
+        /**
+         * Elke 15 minuten (het minimum van Android) de WhatsApp-documentenmap controleren.
+         * Bij een slapende telefoon kan Android dit wat uitstellen.
+         */
         fun planPeriodiek(context: Context) {
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-                "periodiek",
+                "periodiek-15min",
                 ExistingPeriodicWorkPolicy.KEEP,
-                PeriodicWorkRequestBuilder<ScanWorker>(1, TimeUnit.HOURS).build(),
+                PeriodicWorkRequestBuilder<ScanWorker>(15, TimeUnit.MINUTES).build(),
             )
-        }
-
-        /**
-         * Na een WhatsApp-melding: WhatsApp moet de PDF eerst downloaden,
-         * dus een paar keer kijken (na 20 s, 1, 3 en 10 minuten).
-         */
-        fun planNaMelding(context: Context) {
-            val wm = WorkManager.getInstance(context)
-            listOf(20L, 60L, 180L, 600L).forEach { sec ->
-                wm.enqueueUniqueWork(
-                    "na-melding-$sec",
-                    ExistingWorkPolicy.REPLACE,
-                    OneTimeWorkRequestBuilder<ScanWorker>().setInitialDelay(sec, TimeUnit.SECONDS).build(),
-                )
-            }
+            WorkManager.getInstance(context).cancelUniqueWork("periodiek") // oude versie (elk uur)
         }
     }
 }
