@@ -45,7 +45,10 @@ object RoosterParser {
     )
     private val WEEK = Regex("""Week\s*:?\s*(\d{1,2})""", RegexOption.IGNORE_CASE)
     private val TIJD = """(\d{1,2})[,.:](\d{2})"""
-    private val CEL = Regex("""\G\s*(?:$TIJD\s*[-–]\s*$TIJD|[-–])(?=\s|$)""")
+    // Eén cel: "16,00 - 22,50" of "-" (vrij).
+    // Let op: géén \G of find(tekst, startIndex) gebruiken. Android gebruikt de ICU-regex-engine,
+    // waar \G na find(startIndex) alleen aan het begin van de tekst matcht (anders dan op de JVM).
+    private val CEL = Regex("""$TIJD\s*[-–]\s*$TIJD|[-–]""")
 
     /** Ziet de tekst eruit als een NYP-rooster? */
     fun isRooster(tekst: String): Boolean =
@@ -55,8 +58,14 @@ object RoosterParser {
         if (!isRooster(tekst)) throw RoosterFout("Dit lijkt geen NYP-rooster (geen 'Rooster' / 'Week:' gevonden).")
         val weeknummer = WEEK.find(tekst)?.groupValues?.get(1)?.toInt()
         val maandag = bepaalMaandag(tekst, weeknummer, vandaag)
-        val cellen = vindRij(tekst, naam)
-            ?: throw RoosterFout("Naam '$naam' niet gevonden in het rooster van week ${weeknummer ?: "?"}.")
+        val cellen = vindRij(tekst, naam) ?: run {
+            // Voor het logboek: laat zien welke regel(s) met de naam er wel stonden.
+            val regels = normaliseer(tekst).lines().filter { it.contains(naam.trim(), ignoreCase = true) }
+            throw RoosterFout(
+                "Naam '$naam' niet gevonden in het rooster van week ${weeknummer ?: "?"}." +
+                    if (regels.isEmpty()) "" else " Wel gelezen: " + regels.take(3).joinToString(" | ") { "\"${it.trim()}\"" }
+            )
+        }
 
         val diensten = cellen.mapIndexedNotNull { i, cel ->
             if (cel == null) return@mapIndexedNotNull null
@@ -104,7 +113,7 @@ object RoosterParser {
     /** Zoekt de rij van [naam] en geeft 7 cellen terug (null = vrij). */
     internal fun vindRij(tekst: String, naam: String): List<Pair<LocalTime, LocalTime>?>? {
         val rij = Regex("""^\s*\d*\s*${Regex.escape(naam.trim())}\s+(.*)$""", RegexOption.IGNORE_CASE)
-        for (regel in tekst.lines()) {
+        for (regel in normaliseer(tekst).lines()) {
             val m = rij.find(regel) ?: continue
             val cellen = leesCellen(m.groupValues[1]) ?: continue
             return cellen
@@ -112,18 +121,27 @@ object RoosterParser {
         return null
     }
 
+    /** Vaste/smalle spaties (U+00A0, U+202F, …) en tabs worden gewone spaties; \r wordt weggehaald. */
+    internal fun normaliseer(tekst: String): String =
+        tekst.replace('\r', ' ').replace(Regex("[\\u00A0\\u2000-\\u200B\\u202F\\u205F\\u3000\\t]"), " ")
+
     /** Leest precies 7 cellen vanaf het begin van [rest]; null als dat niet lukt. */
     internal fun leesCellen(rest: String): List<Pair<LocalTime, LocalTime>?>? {
         val cellen = mutableListOf<Pair<LocalTime, LocalTime>?>()
         var pos = 0
-        while (cellen.size < 7) {
-            val m = CEL.find(rest, pos) ?: return null
-            if (m.range.first != pos) return null
-            pos = m.range.last + 1
+        // Alle treffers in één keer zoeken en controleren dat ze aaneensluiten
+        // (alleen spaties ertussen) en dat elke cel los staat.
+        for (m in CEL.findAll(rest)) {
+            if (cellen.size == 7) break
+            if (rest.substring(pos, m.range.first).isNotBlank()) return null // iets anders dan een cel
+            if (m.range.first > 0 && !rest[m.range.first - 1].isWhitespace()) return null
+            val na = m.range.last + 1
+            if (na < rest.length && !rest[na].isWhitespace()) return null
+            pos = na
             val g = m.groupValues
             cellen += if (g[1].isEmpty()) null else parseTijd(g[1], g[2]) to parseTijd(g[3], g[4])
         }
-        return cellen
+        return if (cellen.size == 7) cellen else null
     }
 
     /**

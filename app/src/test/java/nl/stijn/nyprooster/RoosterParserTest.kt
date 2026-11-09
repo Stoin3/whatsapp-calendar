@@ -104,6 +104,21 @@ class RoosterParserTest {
         assertTrue(RoosterParser.parse(tekst, "Stijn").diensten.isEmpty())
     }
 
+    @Test
+    fun vasteSpatiesEnTabs() {
+        val tekst = "Rooster NYP Week: 46\r\n09 nov '26\r\n58\u00A0Stijn\t-\u00A0- - - - 16,00\u00A0-\u00A022,50 17,00 - 19,00 2 8,00\r\n"
+        assertEquals(2, RoosterParser.parse(tekst, "Stijn").diensten.size)
+    }
+
+    @Test
+    fun cellenMoetenLosStaan() {
+        // Geen 7 losse cellen -> geen rij.
+        assertEquals(null, RoosterParser.leesCellen("- - - x - - - -"))
+        assertEquals(null, RoosterParser.leesCellen("16,00-22,50- - - - - - -"))
+        assertEquals(null, RoosterParser.leesCellen("- - - - - -"))
+        assertEquals(7, RoosterParser.leesCellen("- - - - - 16,00 - 22,50 17,00 - 19,00 2 8,00")!!.size)
+    }
+
     @Test(expected = RoosterFout::class)
     fun naamOntbreekt() {
         RoosterParser.parse(gesorteerd, "Piet")
